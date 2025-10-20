@@ -8,9 +8,47 @@ import HeartsOverlay from "@/components/HeartsOverlay"
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false)
+  const [imagesPreloaded, setImagesPreloaded] = useState(false)
+
+  // Custom images for photobooth
+  const photoboothImages = [
+    "/album/p1.jpg",
+    "/album/p2.2.jpg", 
+    "/album/p3.3.jpg"
+  ]
 
   useEffect(() => {
-    setIsLoaded(true)
+    // Aggressive preload images immediately when component mounts
+    const preloadImages = async () => {
+      const imagePromises = photoboothImages.map(src => {
+        return new Promise<void>((resolve, reject) => {
+          const img = new Image()
+          img.onload = () => resolve()
+          img.onerror = () => {
+            console.warn(`Failed to preload: ${src}`)
+            resolve() // Still resolve to not block other images
+          }
+          img.src = src
+        })
+      })
+
+      try {
+        await Promise.all(imagePromises)
+        setImagesPreloaded(true)
+        console.log('All images preloaded successfully')
+      } catch (error) {
+        console.warn('Some images failed to preload:', error)
+        setImagesPreloaded(true)
+      }
+    }
+
+    // Start preloading immediately
+    preloadImages()
+    
+    // Set loaded state for animations
+    const timer = setTimeout(() => setIsLoaded(true), 100)
+    
+    return () => clearTimeout(timer)
   }, [])
 
   return (
@@ -29,14 +67,19 @@ export default function Home() {
           </h1>
           <p className="text-xl text-pink-600 font-bold">20/10</p>
           <div className="mt-6 text-sm text-gray-600">
-            <p className="font-medium text-2xl font-serif">To: My Bae (Huyen Dieu)</p>
+            <p className="font-[Be_Vietnam_Pro] text-2xl">
+              To: My Bae (Huyền Diệu)
+              </p>
             <p className="text-xs mt-1 font-serif">From: Thanh Phúc</p>
           </div>
         </section>
 
         {/* Section 2: Photobooth Frame */}
         <section className={`py-8 px-4 ${isLoaded ? "animate-slide-in" : "opacity-0"}`} style={{ animationDelay: "0.2s" }}>
-          <PhotoboothFrame />
+          <PhotoboothFrame 
+            images={photoboothImages}
+            bottomText="Our Sweet Memories 💕"
+          />
         </section>
 
         {/* Section 3: Message Card */}

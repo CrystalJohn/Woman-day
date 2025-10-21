@@ -95,8 +95,7 @@ export default function Home() {
         <section className={`text-center py-12 px-6 ${isLoaded ? "animate-slide-in" : "opacity-0"}`} style={{ animationDelay: "0.6s" }}>
           <p className="text-pink-600 font-semibold mb-8">From Thanh Phúc — with ❤️</p>
           <p className="text-gray-700 text-center leading-relaxed">
-            On this special day, I want to celebrate you and all the amazing women in my life. Your strength, beauty,
-            and kindness inspire me every day. Thank you for being the incredible person you are. 💕
+            On this special day, I want to wish you a happy 20/10. May you always be happy, beautiful, and true to yourself. I hope you'll continue to walk this path with me. I always pray for both you and me.💕
           </p>
         </section>
       </div>

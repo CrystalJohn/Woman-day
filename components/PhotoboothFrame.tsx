@@ -103,7 +103,7 @@ export default function PhotoboothFrame({
 
       {/* Decorative elements */}
       <div className="absolute -top-2 -right-2 text-2xl opacity-80 rotate-12">💋</div>
-      <div className="absolute -bottom-2 -left-2 text-2xl opacity-80 -rotate-12">❤️</div>
+      <div className="absolute -bottom-2 -left-2 text-2xl opacity-80 -rotate-12">❤️❤️</div>
       <div className="absolute top-1/2 -right-3 text-xl opacity-60">🎀</div>
       <div className="absolute top-1/3 -left-3 text-xl opacity-60">✨</div>
     </div>

@@ -7,22 +7,93 @@ export default function AudioPlayer() {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [needsUserInteraction, setNeedsUserInteraction] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
 
   // Auto-play when component mounts
   useEffect(() => {
     const audio = audioRef.current
     if (audio) {
-      // Auto-play after a short delay to ensure audio is loaded
-      const autoPlay = setTimeout(() => {
-        audio.play().then(() => {
-          setIsPlaying(true)
-        }).catch((error) => {
-          console.log("Auto-play prevented by browser:", error)
-        })
-      }, 1000)
+      let autoPlayAttempts = 0
+      const maxAttempts = 5
 
-      return () => clearTimeout(autoPlay)
+      const attemptAutoPlay = async () => {
+        try {
+          // Multiple strategies to ensure auto-play works
+          audio.muted = false // Ensure not muted
+          audio.volume = 0.7 // Set reasonable volume
+          
+          await audio.play()
+          setIsPlaying(true)
+          console.log("Auto-play successful!")
+        } catch (error) {
+          autoPlayAttempts++
+          console.log(`Auto-play attempt ${autoPlayAttempts} failed:`, error)
+          
+          if (autoPlayAttempts < maxAttempts) {
+            // Try different strategies
+            if (autoPlayAttempts === 2) {
+              // Try with muted first, then unmute
+              audio.muted = true
+              try {
+                await audio.play()
+                setTimeout(() => {
+                  audio.muted = false
+                  setIsPlaying(true)
+                }, 100)
+              } catch (mutedError) {
+                setTimeout(attemptAutoPlay, 1000)
+              }
+            } else if (autoPlayAttempts === 3) {
+              // Try with user interaction simulation
+              document.addEventListener('click', handleFirstUserInteraction, { once: true })
+              document.addEventListener('touchstart', handleFirstUserInteraction, { once: true })
+              document.addEventListener('keydown', handleFirstUserInteraction, { once: true })
+            } else {
+              // Retry after delay
+              setTimeout(attemptAutoPlay, 1000 * autoPlayAttempts)
+            }
+          } else {
+            console.warn("Auto-play failed after all attempts. User interaction required.")
+            // Show visual indicator that user needs to click
+            setNeedsUserInteraction(true)
+            setIsLoaded(true)
+          }
+        }
+      }
+
+      const handleFirstUserInteraction = async () => {
+        try {
+          await audio.play()
+          setIsPlaying(true)
+          setNeedsUserInteraction(false)
+          console.log("Auto-play successful after user interaction!")
+        } catch (error) {
+          console.log("Play failed even after user interaction:", error)
+        }
+      }
+
+      // Start auto-play attempts
+      const autoPlayTimeout = setTimeout(attemptAutoPlay, 500)
+      
+      // Also try when audio is loaded
+      const handleCanPlay = () => {
+        if (!isPlaying) {
+          attemptAutoPlay()
+        }
+      }
+      
+      audio.addEventListener('canplay', handleCanPlay)
+      audio.addEventListener('loadeddata', handleCanPlay)
+
+      return () => {
+        clearTimeout(autoPlayTimeout)
+        audio.removeEventListener('canplay', handleCanPlay)
+        audio.removeEventListener('loadeddata', handleCanPlay)
+        document.removeEventListener('click', handleFirstUserInteraction)
+        document.removeEventListener('touchstart', handleFirstUserInteraction)
+        document.removeEventListener('keydown', handleFirstUserInteraction)
+      }
     }
   }, [])
 
@@ -34,6 +105,7 @@ export default function AudioPlayer() {
         audioRef.current.play()
       }
       setIsPlaying(!isPlaying)
+      setNeedsUserInteraction(false) // Clear the user interaction flag
     }
   }
 
@@ -77,6 +149,9 @@ export default function AudioPlayer() {
         onEnded={() => setIsPlaying(false)}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
+        preload="auto"
+        autoPlay
+        playsInline
       />
       
       {/* Song Title */}
@@ -106,7 +181,9 @@ export default function AudioPlayer() {
           {/* Play/Pause button overlay */}
           <button
             onClick={togglePlay}
-            className="absolute inset-0 flex items-center justify-center text-white hover:bg-black hover:bg-opacity-20 transition-all duration-200 rounded-full"
+            className={`absolute inset-0 flex items-center justify-center text-white hover:bg-black hover:bg-opacity-20 transition-all duration-200 rounded-full ${
+              needsUserInteraction ? 'animate-pulse ring-4 ring-pink-400' : ''
+            }`}
           >
             <div className="bg-black bg-opacity-50 rounded-full p-3 hover:bg-opacity-70 transition-all">
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -145,7 +222,9 @@ export default function AudioPlayer() {
 
       {/* Status text */}
       <p className="text-sm text-gray-600 text-center">
-        {!isLoaded ? "🎵 Loading..." : isPlaying ? "🎵 Now Playing" : "🎵 Paused"}
+        {!isLoaded ? "🎵 Loading..." : 
+         needsUserInteraction ? "🎵 Click to start playing!" : 
+         isPlaying ? "🎵 Now Playing" : "🎵 Paused"}
       </p>
     </div>
   )
